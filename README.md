@@ -11,8 +11,8 @@
 
 #Result:
 
-#**DataQuery.xlsm**
-
 #**Query Across Multiple Excel Sheets.py**
 
-#**Query Across Multiple Excel Sheets.txt**
+#**Query Across Multiple Excel Sheets.txt** (VBA)
+
+#**DataQuery.xlsm**
