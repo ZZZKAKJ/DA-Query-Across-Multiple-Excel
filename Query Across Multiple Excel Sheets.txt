@@ -1,0 +1,124 @@
+Sub Query()
+
+    ' Declare variables
+    Dim xlApp As Excel.Application
+    Dim xlBook As Excel.Workbook
+    Dim path As String
+    Dim filename As String
+    Dim myfile As String
+    Dim cnn As Object, rst As Object
+    Dim SellerProvince As String
+    Dim Product As String
+    Dim StartDate As Single
+    Dim EndDate As Single
+    Dim DistributeTo As String
+    Dim DistributeType As String
+    Dim SellerCode As String
+    Dim BuyerCode As String
+    Dim sumQuantity As Single
+    
+    ' Initialize total quantity sum
+    sumQuantity = 0
+    
+    ' Set the path to the folder containing data files
+    path = ThisWorkbook.path & "\AllData\"
+    
+    ' Get the first file in the directory
+    myfile = Dir(ThisWorkbook.path & "\AllData\" & "*.xlsx")
+    
+    ' Loop through all files in the directory
+    Do While myfile <> ""
+        ' Get the file name without extension
+        filename = (Mid(myfile, 13, 4) & "/" & Mid(myfile, 17, 2))
+        
+        ' Check if the file is not empty
+        If myfile = "" Then
+            Exit Do
+        End If
+        
+        ' Check if the file falls within the specified date range
+        If (filename >= Mid(ThisWorkbook.Sheets("Query").Range("B3"), 1, 7)) And (filename <= Mid(ThisWorkbook.Sheets("Query").Range("B4"), 1, 7)) Then
+            
+            ' Print the path of the file being processed
+            Debug.Print (path + myfile)
+            
+            ' Create a new Excel application and open the workbook
+            Set xlApp = New Excel.Application
+            Set xlBook = xlApp.Workbooks.Open(path + myfile)
+    
+            ' Handle SellerProvince filtering
+            If ThisWorkbook.Sheets("Query").Range("B1") = "AllSellerProvince" Then
+                SellerProvince = ""
+            Else
+                SellerProvince = " and SellerProvince='" & ThisWorkbook.Sheets("Query").Range("C1") & "'"
+            End If
+    
+            ' Handle Product filtering
+            If ThisWorkbook.Sheets("Query").Range("B2") = "AllProduct" Then
+                Product = ""
+            Else
+                Product = " and Product='" & ThisWorkbook.Sheets("Query").Range("C2") & "'"
+            End If
+    
+            ' Set StartDate and EndDate
+            StartDate = ThisWorkbook.Sheets("Query").Range("C3")
+            EndDate = ThisWorkbook.Sheets("Query").Range("C4")
+    
+            ' Handle DistributeTo filtering
+            If ThisWorkbook.Sheets("Query").Range("B5") = "AllDistributeTo" Then
+                DistributeTo = ""
+            Else
+                DistributeTo = " and DistributeTo='" & ThisWorkbook.Sheets("Query").Range("C5") & "'"
+            End If
+    
+            ' Handle DistributeType filtering
+            If ThisWorkbook.Sheets("Query").Range("B6") = "AllDistributeType" Then
+                DistributeType = ""
+            Else
+                DistributeType = " and DistributeType='" & ThisWorkbook.Sheets("Query").Range("C6") & "'"
+            End If
+    
+            ' Handle SellerCode filtering
+            If ThisWorkbook.Sheets("Query").Range("B7") = "AllSellerCode" Then
+                SellerCode = ""
+            Else
+                SellerCode = " and SellerCode='" & ThisWorkbook.Sheets("Query").Range("C7") & "'"
+            End If
+    
+            ' Handle BuyerCode filtering
+            If ThisWorkbook.Sheets("Query").Range("B8") = "AllBuyerCode" Then
+                BuyerCode = ""
+            Else
+                BuyerCode = " and BuyerCode='" & ThisWorkbook.Sheets("Query").Range("C8") & "'"
+            End If
+    
+            ' Set up connection to the Excel workbook
+            cnnStr = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" & xlBook.FullName & ";Extended Properties=""Excel 12.0 Macro;HDR=Yes"""
+            Set cnn = CreateObject("ADODB.Connection")
+            cnn.Open cnnStr
+    
+            ' Construct the SQL query
+            sqlStr = "SELECT sum(Number) " & _
+                "FROM [DataExcel$] " & _
+                "WHERE SellDate<=" & EndDate & " and SellDate >=" & StartDate & SellerProvince & Product & DistributeTo & DistributeType & SellerCode & BuyerCode
+            
+            ' Execute the SQL query
+            Set rst = cnn.Execute(sqlStr)
+    
+            ' Copy the result to the Query sheet and update the total sum
+            ThisWorkbook.Sheets("Query").Range("F1").CopyFromRecordset rst
+            sumQuantity = ThisWorkbook.Sheets("Query").Range("F1") + sumQuantity
+            
+            ' Clean up objects
+            Set rst = Nothing
+            xlBook.Close SaveChanges:=False
+            xlApp.Quit
+            Set xlBook = Nothing
+            Set xlApp = Nothing
+        End If
+    
+    Loop
+    
+    ' Update the total sum in the Query sheet
+    ThisWorkbook.Sheets("Query").Range("F1") = sumQuantity
+End Sub
